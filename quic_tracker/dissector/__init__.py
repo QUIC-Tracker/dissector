@@ -118,10 +118,14 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
         if length is None:
             length = args.get('length')
         byte_length = struct_triggers.get(field, {}).get('byte_length', args.get('byte_length', field_ctx.get('byte_length')))
+        if length is None and byte_length is not None:
+            length = byte_length * 8
         format = struct_triggers.get(field, {}).get('format', args.get('format', field_ctx.get('format')))
         if format in vars(builtins):
             if format == 'hex':
                 format = lambda x: hex(x) if type(x) is int else '0x' + x.hex()
+            elif format == 'bytes':
+                format = lambda x: bytearray(x) if type(x) is not int else x.to_bytes(x.bit_length(), byteorder='big')
             else:
                 format = vars(builtins)[format]
         else:
@@ -130,6 +134,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
         parse = struct_triggers.get(field, {}).get('parse', args.get('parse', field_ctx.get('parse')))
         conditions = struct_triggers.get(field, {}).get('conditions', args.get('conditions', field_ctx.get('conditions')))
         triggers = struct_triggers.get(field, {}).get('triggers', args.get('triggers', field_ctx.get('triggers')))
+        fallback = struct_triggers.get(field, {}).get('fallback', args.get('fallback', field_ctx.get('fallback')))
 
         if 'repeated' in args and len(buffer) >= length//4:
             repeating = True
@@ -141,13 +146,20 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
         if parse:
             parse_buf = buffer
             if byte_length:
-                parse_buf = buffer[:start_idx + i + byte_length]
+                parse_buf = buffer[:byte_length]
+
             for _ in range(length if length is not None else 1):
-                for ret, inc in yield_structures(parse_buf, parse, protocol, start_idx + i, context):
-                    structure.append((field, ret, start_idx + i, start_idx + i + inc))
-                    i += inc
-                    buffer = buffer[inc:]
-                    parse_buf = parse_buf[inc:]
+                try:
+                    for ret, inc in yield_structures(parse_buf, parse, protocol, start_idx + i, context):
+                        structure.append((field, ret, start_idx + i, start_idx + i + inc))
+                        i += inc
+                        buffer = buffer[inc:]
+                        parse_buf = parse_buf[inc:]
+                except ParseError:
+                    if not fallback:
+                        raise
+                    structure_description.append({field: fallback})
+                    continue
             continue
         elif length:
             if length == 'varint':
@@ -234,7 +246,6 @@ def read(buffer, length):
         2: 'H',
         4: 'I',
         8: 'Q',
-        16: '16B',
     }
     if length not in _len_to_format_char:
         if length <= len(buffer):
