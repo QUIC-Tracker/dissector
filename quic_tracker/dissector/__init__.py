@@ -107,7 +107,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
         field_ctx = context.get(field, {})
 
         if field == 'next':
-            next_struct = args
+            next_struct = struct_triggers.get(field, args)
             continue
         elif field == 'type':
             continue
