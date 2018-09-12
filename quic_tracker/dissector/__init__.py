@@ -17,6 +17,8 @@ import builtins
 import os
 import struct
 import itertools
+from copy import deepcopy
+
 import yaml
 
 
@@ -80,7 +82,13 @@ def parse_structure_type(buffer, type_name, protocol, start_idx, context):
             if field == 'type':
                 return args
 
-    structures = [(k, v) for k, v in protocol.items() if get_struct_type(v) == type_name]
+    structures = []
+    for k, v in protocol.items():
+        s_type = get_struct_type(v)
+        if type(s_type) == list and type_name in s_type:
+            structures.append((k, v))
+        elif type_name == s_type:
+            structures.append((k, v))
 
     for struct_name, struct_description in structures:
         try:
@@ -101,7 +109,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
     repeating = False
     successful_repeated = False
 
-    structure_description = list(reversed(structure_description))
+    structure_description = deepcopy(list(reversed(structure_description)))
     while structure_description and buffer:
         field, args = list(structure_description.pop().items())[0]
         field_ctx = context.get(field, {})
@@ -112,13 +120,18 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
         elif field == 'type':
             continue
 
+        values = struct_triggers.get(field, {}).get('values', args.get('values', field_ctx.get('values')))
+        parse = struct_triggers.get(field, {}).get('parse', args.get('parse', field_ctx.get('parse')))
+        conditions = struct_triggers.get(field, {}).get('conditions',args.get('conditions', field_ctx.get('conditions')))
+        triggers = struct_triggers.get(field, {}).get('triggers', args.get('triggers', field_ctx.get('triggers')))
+        fallback = struct_triggers.get(field, {}).get('fallback', args.get('fallback', field_ctx.get('fallback')))
         length = struct_triggers.get(field, {}).get('length', field_ctx.get('length'))
         if length is not None and 'parse' in args:
             length //= 8
         if length is None:
             length = args.get('length')
         byte_length = struct_triggers.get(field, {}).get('byte_length', args.get('byte_length', field_ctx.get('byte_length')))
-        if length is None and byte_length is not None:
+        if length is None and byte_length is not None and not parse:
             length = byte_length * 8
         format = struct_triggers.get(field, {}).get('format', args.get('format', field_ctx.get('format')))
         if format in vars(builtins):
@@ -126,15 +139,12 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 format = lambda x: hex(x) if type(x) is int else '0x' + x.hex()
             elif format == 'bytes':
                 format = lambda x: bytearray(x) if type(x) is not int else x.to_bytes(x.bit_length(), byteorder='big')
+            elif format == 'int':
+                format = lambda x: int(x) if type(x) not in (bytearray, bytes) else int.from_bytes(x, 'big')
             else:
                 format = vars(builtins)[format]
         else:
             format = lambda x: x
-        values = struct_triggers.get(field, {}).get('values', args.get('values', field_ctx.get('values')))
-        parse = struct_triggers.get(field, {}).get('parse', args.get('parse', field_ctx.get('parse')))
-        conditions = struct_triggers.get(field, {}).get('conditions', args.get('conditions', field_ctx.get('conditions')))
-        triggers = struct_triggers.get(field, {}).get('triggers', args.get('triggers', field_ctx.get('triggers')))
-        fallback = struct_triggers.get(field, {}).get('fallback', args.get('fallback', field_ctx.get('fallback')))
 
         if 'repeated' in args and len(buffer) >= length//4:
             repeating = True
@@ -155,11 +165,12 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                         i += inc
                         buffer = buffer[inc:]
                         parse_buf = parse_buf[inc:]
-                except ParseError:
+                except ParseError as e:
                     if not fallback:
                         raise
-                    structure_description.append({field: fallback})
-                    continue
+                    if parse_buf:
+                        structure_description.append({field: fallback})
+                        break
             continue
         elif length:
             if length == 'varint':
@@ -198,7 +209,8 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                     raise
                 continue
 
-            structure.append((field, format(val), start_idx + i, start_idx + i + (length//8 or 1)))
+            val = format(val)
+            structure.append((field, val, start_idx + i, start_idx + i + (length//8 or 1)))
 
             if length >= 8:
                 buffer = buffer[length//8:]
@@ -232,7 +244,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 continue
             field_ctx = context.get(field, {})
             length = struct_triggers.get(field, {}).get('length', field_ctx.get('length', args.get('length')))
-            conditions = struct_triggers.get(field, {}).get('conditions', args.get('conditions', field_ctx.get('conditions')))
+            conditions = struct_triggers.get(field, {}).get('conditions', args.get('conditions', field_ctx.get('conditions'))) or []
             if not length or not all(verify_condition(structure, field, formula) for c in conditions for field, formula in c.items()):
                 continue
             raise ParseError('The structure has not been fully parsed')

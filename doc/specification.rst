@@ -145,7 +145,7 @@ Structure
 A structure defines a list of fields. ``type`` and ``next`` are reserved keywords that cannot be used as field name.
 
 - ``type`` -- indicates to which type this structure belongs to. Structure types can be used as value for any parameter
-  that expects a structure name as argument.
+  that expects a structure name as argument. The value can be a single type or a list of types.
 - ``next`` -- defines which structure can follow the current structure. This is an indication and not a strict
   requirement. It should be used when the current structure can be repeatedly embedded into another structure until the
   buffer ends.
