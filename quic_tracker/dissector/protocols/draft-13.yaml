@@ -481,9 +481,11 @@ CRYPTO:
       length: varint
       triggers:
         - Crypto Data:
-            length: set
+            byte_length: set
   - Crypto Data:
-      format: bytes
+      parse: Handshake Protocol
+      fallback:
+        format: bytes
   - next: Frame
 NEW_TOKEN:
   - type: Frame
@@ -525,3 +527,175 @@ ACK_ECN:
   - ACK Blocks:
       parse: ACK Block
   - next: Frame
+
+TLS Client Hello:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 1
+  - Length:
+      format: int
+      length: 24
+  - Version:
+      length: 16
+      format: hex
+      values: [0x0301, 0x0302, 0x0303]
+  - Random:
+      length: 256
+      format: bytes
+  - Session ID Length:
+      length: 8
+      triggers:
+        - Session ID:
+            byte_length: set
+  - Session ID:
+      conditions:
+        - Session ID Length:
+            neq: 0
+      format: bytes
+  - Cipher Suites Length:
+      length: 16
+      triggers:
+        - Cipher Suites:
+            length: set
+  - Cipher Suites:
+      format: bytes
+  - Compression Methods Length:
+      length: 8
+      triggers:
+        - Compression Methods:
+            length: set
+  - Compression Methods:
+      format: bytes
+  - Extensions Length:
+      length: 16
+      triggers:
+        - Extensions:
+            byte_length: set
+  - Extensions:
+      parse: Extensions
+      fallback:
+        length: '*'
+        format: bytes
+  - next: Handshake Protocol
+
+TLS Server Hello:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 2
+  - Length:
+      length: 24
+  - Version:
+      length: 16
+      format: hex
+      values: [0x0301, 0x0302, 0x0303]
+  - Random:
+      length: 256
+      format: bytes
+  - Session ID Length:
+      length: 8
+      triggers:
+        - Session ID:
+            length: set
+  - Session ID:
+      conditions:
+        - Session ID Length:
+            neq: 0
+      format: bytes
+  - Cipher Suite:
+      length: 16
+      format: hex
+  - Compression Method:
+      length: 8
+  - Extensions Length:
+      length: 16
+      triggers:
+        - Extensions:
+            byte_length: set
+  - Extensions:
+      parse: Extensions
+      fallback:
+        length: '*'
+        format: bytes
+  - next: Handshake Protocol
+
+TLS Certificate:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 11
+  - Length:
+      length: 24
+  - Certificate Payload:
+      length: '*'
+  - next: Handshake Protocol
+
+TLS End Of Early Data:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 5
+  - Length:
+      format: int
+      length: 24
+  - next: Handshake Protocol
+
+TLS Encrypted Extensions:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 8
+  - Length:
+      format: int
+      length: 24
+      triggers:
+        - Extensions:
+            byte_length: set
+  - Extensions:
+      parse: Extensions
+      fallback:
+        length: '*'
+        format: bytes
+  - next: Handshake Protocol
+
+TLS Finished:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 20
+  - Length:
+      format: int
+      length: 24
+      triggers:
+        - Verify Data:
+            byte_length: set
+  - Verify Data:
+      format: bytes
+  - next: Handshake Protocol
+
+TLS New Session Ticket:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 4
+  - Length:
+      format: int
+      length: 24
+      triggers:
+        - New Session Ticket Data:
+            byte_length: set
+  - New Session Ticket Data:
+      format: bytes
+
+Extensions:
+  - Type:
+      length: 16
+  - Length:
+      length: 16
+      triggers:
+        - Opaque:
+            byte_length: set
+  - Opaque:
+      format: bytes
+  - next: Extensions
