@@ -158,17 +158,21 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
             if byte_length:
                 parse_buf = buffer[:byte_length]
 
+            total_parsed = 0
             for _ in range(length if length is not None else 1):
                 try:
                     for ret, inc in yield_structures(parse_buf, parse, protocol, start_idx + i, context):
                         structure.append((field, ret, start_idx + i, start_idx + i + inc))
                         i += inc
+                        total_parsed += inc
                         buffer = buffer[inc:]
                         parse_buf = parse_buf[inc:]
                 except ParseError as e:
                     if not fallback:
                         raise
                     if parse_buf:
+                        if 'byte_length' in struct_triggers.get(field, {}):
+                            struct_triggers[field]['byte_length'] = byte_length - total_parsed
                         structure_description.append({field: fallback})
                         break
             continue

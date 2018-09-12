@@ -687,6 +687,7 @@ TLS New Session Ticket:
             byte_length: set
   - New Session Ticket Data:
       format: bytes
+  - next: Handshake Protocol
 
 Extensions:
   - Type:
