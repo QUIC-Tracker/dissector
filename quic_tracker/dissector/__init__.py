@@ -233,7 +233,10 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                         if val is 0:
                             structure_description = list(filter(lambda x: next(iter(x.items()))[0] != trigger_field, structure_description))
                     elif type(action) is dict:
-                        d[attribute] = action[val]
+                        try:
+                            d[attribute] = action[val]
+                        except KeyError:
+                            raise ParseError('Unable to find corresponding value for %d' % val)
                     struct_triggers[trigger_field] = d
 
         if repeating:
