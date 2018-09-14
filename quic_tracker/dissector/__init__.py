@@ -266,7 +266,7 @@ def read(buffer, length):
         4: 'I',
         8: 'Q',
     }
-    if length not in _len_to_format_char:
+    if length not in _len_to_format_char or len(buffer) < length:
         if length <= len(buffer):
             return buffer[:length]
         raise ParseError('{} bytes cannot be read from a {}-byte long buffer'.format(length, len(buffer)))
