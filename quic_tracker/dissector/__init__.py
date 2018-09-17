@@ -54,7 +54,7 @@ def parse_packet_with(buffer, protocol, context):
             ret, inc, _ = parse_structure_type(buffer[:], top_struct, protocol, 0, context)
             if inc < len(buffer):
                 raise ParseError('There are bytes left unparsed in the buffer')
-            return [(top_struct, ('', ret, 0, inc), 0, inc)]
+            return [(top_struct, ('', ret[1], 0, inc), 0, inc)]
         except ParseError as e:
             last_e = e
             pass
@@ -85,9 +85,7 @@ def parse_structure_type(buffer, type_name, protocol, start_idx, context):
     structures = []
     for k, v in protocol.items():
         s_type = get_struct_type(v)
-        if type(s_type) == list and type_name in s_type:
-            structures.append((k, v))
-        elif type_name == s_type:
+        if (type(s_type) == list and type_name in s_type) or type_name == s_type or type_name == k:
             structures.append((k, v))
 
     for struct_name, struct_description in structures:
