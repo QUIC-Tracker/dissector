@@ -24,7 +24,7 @@ class TestDissector(unittest.TestCase):
     @staticmethod
     def parse(packet, context=None):
         if context is None:
-            context = {}
+            context = {'Destination Connection ID': {'length': 64}}
         return parse_packet(bytearray(b64decode(packet)), context)[1]
 
 
@@ -33,7 +33,8 @@ if __name__ == '__main__':
         setattr(TestDissector, 'test_' + k, lambda self: self.assertEqual(truth[packet_name], self.parse(getattr(self, packet_name))))
 
     for k in truth:
-        set_test_function(k)
+        if hasattr(TestDissector, k):
+            set_test_function(k)
 
     TestDissector.maxDiff = None
 

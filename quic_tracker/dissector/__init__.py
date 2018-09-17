@@ -211,8 +211,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                     raise
                 continue
 
-            val = format(val)
-            structure.append((field, val, start_idx + i, start_idx + i + (length//8 or 1)))
+            structure.append((field, format(val), start_idx + i, start_idx + i + (length//8 or 1)))
 
             if length >= 8:
                 buffer = buffer[length//8:]
@@ -227,6 +226,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 for attribute, action in actions.items():
                     d = struct_triggers.get(trigger_field, {})
                     if action == 'set':
+                        val = format(val)
                         d[attribute] = val * 8 if attribute == 'length' else val
                         if val is 0:
                             structure_description = list(filter(lambda x: next(iter(x.items()))[0] != trigger_field, structure_description))
