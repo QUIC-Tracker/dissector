@@ -16,6 +16,7 @@
 import builtins
 import os
 import struct
+import socket
 import itertools
 from copy import deepcopy
 
@@ -139,8 +140,16 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 format = lambda x: bytearray(x) if type(x) is not int else x.to_bytes(x.bit_length(), byteorder='big')
             elif format == 'int':
                 format = lambda x: int(x) if type(x) not in (bytearray, bytes) else int.from_bytes(x, 'big')
+            elif format == 'ip':
+                format = socket.inet_ntoa
+            elif format == 'ipv6':
+                format = lambda x: socket.inet_ntop(socket.AF_INET6, bytearray(x))
             else:
                 format = vars(builtins)[format]
+        elif format == 'ip':
+            format = socket.inet_ntoa
+        elif format == 'ipv6':
+            format = lambda x: socket.inet_ntop(socket.AF_INET6, bytearray(x))
         else:
             format = lambda x: x
 
