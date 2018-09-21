@@ -250,7 +250,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
             field_ctx = context.get(field, {})
             length = struct_triggers.get(field, {}).get('length', field_ctx.get('length', args.get('length')))
             conditions = struct_triggers.get(field, {}).get('conditions', args.get('conditions', field_ctx.get('conditions'))) or []
-            if not length or not all(verify_condition(structure, field, formula) for c in conditions for field, formula in c.items()):
+            if not length or length == '*' or not all(verify_condition(structure, field, formula) for c in conditions for field, formula in c.items()):
                 continue
             raise ParseError('The structure has not been fully parsed')
 
