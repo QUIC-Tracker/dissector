@@ -124,8 +124,10 @@ Long Header:
             eq: '0x7e'
       parse: Retry Packet
 Retry Packet:
+  - Unused:
+      length: 4
   - ODCIL:
-      length: 8
+      length: 4
       triggers:
         - Original Destination Connection ID:
             length: set
@@ -529,12 +531,6 @@ ACK_ECN:
       length: varint
   - ACK Blocks:
       parse: ACK Block
-  - ECT(0) Count:
-      length: varint
-  - ECT(1) Count:
-      length: varint
-  - ECN-CE Count:
-      length: varint
   - next: Frame
 
 TLS Client Hello:
