@@ -180,6 +180,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                     if parse_buf:
                         if 'byte_length' in struct_triggers.get(field, {}):
                             struct_triggers[field]['byte_length'] = byte_length - total_parsed
+                        struct_triggers.get(field, {}).pop('parse', None)
                         structure_description.append({field: fallback})
                         break
             continue
