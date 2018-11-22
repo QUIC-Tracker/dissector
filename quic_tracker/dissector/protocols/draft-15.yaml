@@ -531,6 +531,12 @@ ACK_ECN:
       length: varint
   - ACK Blocks:
       parse: ACK Block
+  - ECT(0) Count:
+      length: varint
+  - ECT(1) Count:
+      length: varint
+  - ECN-CE Count:
+      length: varint
   - next: Frame
 
 TLS Client Hello:
