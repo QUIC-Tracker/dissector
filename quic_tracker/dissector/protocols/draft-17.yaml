@@ -18,6 +18,7 @@ top:
   - Long Header
   - Short Header
   - Version Negotiation Packet
+  #- Retry Packet
 Long Header:
   - Header Form:
       length: 1
@@ -26,7 +27,7 @@ Long Header:
       length: 1
   - Long Packet Type:
       length: 2
-      values: [0x0, 0x1, 0x2, 0x3]
+      values: [0x0, 0x1, 0x2]
       format: hex
   - Reserved Bits:
       length: 2
@@ -65,7 +66,7 @@ Long Header:
               13: 128
               14: 136
               15: 144
-          save_to_context:
+            save_to_context:
   - SCIL:
       length: 4
       triggers:
@@ -118,24 +119,101 @@ Long Header:
       triggers:
         - Payload:
             byte_length: set
-      conditions:
-        - Long Packet Type:
-            neq: '0x3'
   - Packet Number:
-      conditions:
-        - Long Packet Type:
-            neq: '0x3'
+      length: 0
   - Payload:
-      conditions:
-        - Long Packet Type:
-            neq: '0x3'
       parse: Frame
-  - Payload:
+Retry Packet:
+  - Header Form:
+      length: 1
+      values: 1
+  - Fixed Bit:
+      length: 1
+  - Long Packet Type:
+      length: 2
+      values: 0x03
+      format: hex
+  - ODCIL:
+      length: 4
+      triggers:
+      - Original Destination Connection ID:
+          length:
+            0: 0
+            1: 32
+            2: 40
+            3: 48
+            4: 56
+            5: 64
+            6: 72
+            7: 80
+            8: 88
+            9: 96
+            10: 104
+            11: 112
+            12: 120
+            13: 128
+            14: 136
+            15: 144
+  - Version:
+      length: 32
+      values:
+        neq: 0
+      format: hex
+  - DCIL:
+      length: 4
+      triggers:
+      - Destination Connection ID:
+          length:
+            0: 0
+            1: 32
+            2: 40
+            3: 48
+            4: 56
+            5: 64
+            6: 72
+            7: 80
+            8: 88
+            9: 96
+            10: 104
+            11: 112
+            12: 120
+            13: 128
+            14: 136
+            15: 144
+          save_to_context:
+  - SCIL:
+      length: 4
+      triggers:
+      - Source Connection ID:
+          length:
+            0: 0
+            1: 32
+            2: 40
+            3: 48
+            4: 56
+            5: 64
+            6: 72
+            7: 80
+            8: 88
+            9: 96
+            10: 104
+            11: 112
+            12: 120
+            13: 128
+            14: 136
+            15: 144
+  - Destination Connection ID:
+      length: 0
       conditions:
-        - Long Packet Type:
-            eq: '0x3'
-      parse: Retry Packet
-Retry Packet: # TODO: Retry Packet should explicit its own header
+      - DCIL:
+          neq: 0
+      format: hex
+  - Source Connection ID:
+      length: 0
+      conditions:
+      - SCIL:
+          neq: 0
+      format: hex
   - Original Destination Connection ID:
       length: 64
       format: hex

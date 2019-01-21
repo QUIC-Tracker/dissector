@@ -228,10 +228,11 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 i += length//8
 
         if triggers:
+            save_to_context = set()
             for trigger_field, actions in itertools.chain.from_iterable(t.items() for t in triggers):
-                if trigger_field == 'save_to_context':
-                    context.update(struct_triggers)
-                    continue
+                if 'save_to_context' in actions:
+                    save_to_context.add(trigger_field)
+                    del actions['save_to_context']
 
                 for attribute, action in actions.items():
                     d = struct_triggers.get(trigger_field, {})
@@ -246,6 +247,9 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                         except KeyError:
                             raise ParseError('Unable to find corresponding value for %d' % val)
                     struct_triggers[trigger_field] = d
+
+            for field in save_to_context:
+                context[field] = struct_triggers[field]
 
         if repeating:
             successful_repeated = True
