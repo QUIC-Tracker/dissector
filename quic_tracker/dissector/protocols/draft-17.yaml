@@ -25,6 +25,7 @@ Long Header:
       values: 1
   - Fixed Bit:
       length: 1
+      values: 1
   - Long Packet Type:
       length: 2
       values: [0x0, 0x1, 0x2]
@@ -129,6 +130,7 @@ Retry Packet:
       values: 1
   - Fixed Bit:
       length: 1
+      values: 1
   - Long Packet Type:
       length: 2
       values: 0x03
