@@ -18,7 +18,7 @@ top:
   - Long Header
   - Short Header
   - Version Negotiation Packet
-  #- Retry Packet
+  - Retry Packet
 Long Header:
   - Header Form:
       length: 1
@@ -159,7 +159,7 @@ Retry Packet:
   - Version:
       length: 32
       values:
-        neq: 0
+        eq: 0xff000011  # Otherwise Retry can match all pre-draft-17 LH :'(
       format: hex
   - DCIL:
       length: 4
@@ -228,6 +228,7 @@ Short Header:
       values: 0
   - Fixed Bit:
       length: 1
+      values: 1
   - Spin Bit:
       length: 1
   - Reserved Bits:
