@@ -210,9 +210,9 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                     if type(values) is dict:
                         err = ParseError('Value %s for field %s does not fulfill conditions %s' % (str(val), str(field), str(values)))
                         for op, v in values.items():
-                            if op == 'eq' and val != v:
+                            if op == 'eq' and not is_equal(v, val):
                                 raise err
-                            elif op == 'neq' and val == v:
+                            elif op == 'neq' and is_equal(v, val):
                                 raise err
                     elif (type(values) is list and val not in values) or (type(values) is not list and val != values):
                         raise ParseError('Value %s for field %s not acceptable (%s)' % (str(val), str(field), str(values)))
@@ -313,7 +313,17 @@ def verify_condition(structure, field, formula):
     for f, v, _, _ in structure:
         if f == field:
             if 'eq' in formula:
-                return v == formula['eq']
+                return is_equal(v, formula['eq'])
             elif 'neq' in formula:
-                return v != formula['neq']
+                return not is_equal(v, formula['neq'])
     return False
+
+
+def is_equal(expected, actual):
+    try:
+        if type(actual) is int:
+            return actual == int(expected, base=0)
+    except:
+        pass
+    return actual == expected
+
