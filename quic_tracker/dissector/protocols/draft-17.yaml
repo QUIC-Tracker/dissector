@@ -555,10 +555,12 @@ STREAM:
             eq: 1
       triggers:
         - Stream Data:
-            length: set
+            byte_length: set
   - Stream Data:
-      length: '*'
-      format: bytes
+      parse: HTTP Frame
+      fallback:
+        length: '*'
+        format: bytes
   - next: Frame
 CRYPTO:
   - type: Frame
@@ -588,7 +590,7 @@ NEW_TOKEN:
       length: varint
       triggers:
         - Token:
-            length: set
+            byte_length: set
   - Token:
       format: bytes
   - next: Frame
@@ -816,3 +818,168 @@ Extensions:
   - Opaque:
       format: bytes
   - next: Extensions
+
+DATA:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+      triggers:
+        - Payload:
+            byte_length: set
+  - Type:
+      length: 8
+      values: 0x00
+  - Payload:
+      format: bytes$
+  - next: HTTP Frame
+
+HEADERS:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+      triggers:
+        - Header Block:
+            byte_length: set
+  - Type:
+      length: 8
+      values: 0x01
+  - Header Block:
+      format: bytes
+  - next: HTTP Frame
+
+PRIORITY:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+  - Type:
+      length: 8
+      values: 0x02
+  - PT:
+      length: 2
+  - DT:
+      length: 2
+  - 'Prioritized Element: Stream ID':
+      length: varint
+      conditions:
+        - PT:
+            eq: 0
+  - 'Prioritized Element: Push ID':
+      length: varint
+      conditions:
+      - PT:
+          eq: 1
+  - 'Prioritized Element: Placeholder':
+      length: varint
+      conditions:
+      - PT:
+          eq: 2
+  - 'Element Dependency: Stream ID':
+      length: varint
+      conditions:
+      - DT:
+          eq: 0
+  - 'Element Dependency: Push ID':
+      length: varint
+      conditions:
+      - DT:
+          eq: 1
+  - 'Element Dependency: Placeholder':
+      length: varint
+      conditions:
+      - DT:
+          eq: 2
+  - Header Block:
+      format: bytes
+  - next: HTTP Frame
+
+CANCEL_PUSH:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+  - Type:
+      length: 8
+      values: 0x03
+  - Push ID:
+      format: varint
+  - next: HTTP Frame
+
+SETTINGS:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+      triggers:
+        - Parameters:
+            byte_length: set
+  - Type:
+      length: 8
+      values: 0x04
+  - Parameters:
+      parse: SETTINGS parameter
+  - next: HTTP Frame
+
+SETTINGS parameter:
+  - Identifier:
+      length: 16
+  - Value:
+      length: varint
+
+PUSH_PROMISE:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+  - Type:
+      length: 8
+      values: 0x05
+  - Push ID:
+      format: varint
+  - Header Block:
+      format: bytes
+      length: '*' # TODO: It should be Length - VarIntLen(Push ID)
+  - next: HTTP Frame
+
+GOAWAY:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+  - Type:
+      length: 8
+      values: 0x07
+  - Stream ID:
+      format: varint
+  - next: HTTP Frame
+
+MAX_PUSH_ID:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+  - Type:
+      length: 8
+      values: 0x0d
+  - Push ID:
+      format: varint
+  - next: HTTP Frame
+
+DUPLICATE_PUSH:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+  - Type:
+      length: 8
+      values: 0x0e
+  - Push ID:
+      format: varint
+  - next: HTTP Frame
+
+Unknown HTTP Frame:
+  - type: HTTP Frame
+  - Length:
+      length: varint
+      triggers:
+        - Opaque Data:
+            byte_length: set
+  - Type:
+      length: 8
+      values: [0xb, 0x2a, 0x49, 0x68, 0x87, 0xa6, 0xc5, 0xe4]
+  - Opaque Data:
+      format: bytes
+  - next: HTTP Frame
