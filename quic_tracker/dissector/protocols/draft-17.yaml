@@ -559,7 +559,6 @@ STREAM:
   - Stream Data:
       parse: HTTP Frame
       fallback:
-        length: '*'
         format: bytes
   - next: Frame
 CRYPTO:
