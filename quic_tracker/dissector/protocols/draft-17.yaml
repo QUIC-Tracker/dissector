@@ -806,9 +806,13 @@ TLS New Session Ticket:
       format: bytes
   - next: Handshake Protocol
 
-Extensions:
+TLS Extensions:
+  - type: Extensions
   - Type:
       length: 16
+      values:
+        neq: '0xffa5'
+      format: hex
   - Length:
       length: 16
       triggers:
@@ -817,6 +821,39 @@ Extensions:
   - Opaque:
       format: bytes
   - next: Extensions
+
+QUIC Transport Parameters:
+  - type: Extensions
+  - Type:
+      length: 16
+      values: 0xffa5
+      format: hex
+  - Length:
+      length: 16
+  - Initial Version:
+      length: 32
+      format: hex
+  - Parameters Length:
+      length: 16
+      triggers:
+        - Parameters:
+            byte_length: set
+  - Parameters:
+      parse: QUIC Transport Parameter
+  - next: Extensions
+
+QUIC Transport Parameter:
+  - Type:
+      length: 16
+      format: hex
+  - Length:
+      length: 16
+      triggers:
+        - Value:
+            byte_length: set
+  - Value:
+      format: int
+  - next: QUIC Transport Parameter
 
 DATA:
   - type: HTTP Frame
@@ -829,7 +866,7 @@ DATA:
       length: 8
       values: 0x00
   - Payload:
-      format: bytes$
+      format: bytes
   - next: HTTP Frame
 
 HEADERS:
