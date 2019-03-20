@@ -369,9 +369,9 @@ CONNECTION_CLOSE:
       length: varint
       triggers:
         - Reason Phrase:
-            length: set
+            byte_length: set
   - Reason Phrase:
-      length: 0
+      format: bytes
   - next: Frame
 APPLICATION_CLOSE:
   - type: Frame
@@ -386,7 +386,9 @@ APPLICATION_CLOSE:
       length: varint
       triggers:
         - Reason Phrase:
-            length: set
+            byte_length: set
+  - Reason Phrase:
+      format: bytes
   - next: Frame
 MAX_DATA:
   - type: Frame
