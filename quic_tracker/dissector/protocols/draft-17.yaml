@@ -158,8 +158,7 @@ Retry Packet:
             15: 144
   - Version:
       length: 32
-      values:
-        eq: 0xff000011  # Otherwise Retry can match all pre-draft-17 LH :'(
+      values: [0xff000011, 0xff000012, 0xff000013]  # Otherwise Retry can match all pre-draft-17 LH :'(
       format: hex
   - DCIL:
       length: 4
