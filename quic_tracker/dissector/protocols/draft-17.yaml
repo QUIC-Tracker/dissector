@@ -853,7 +853,10 @@ QUIC Transport Parameter:
         - Value:
             byte_length: set
   - Value:
-      format: int
+      length: varint
+      fallback:
+        length: '*'
+        format: hex
   - next: QUIC Transport Parameter
 
 DATA:
