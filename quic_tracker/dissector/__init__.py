@@ -137,7 +137,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
             if format == 'hex':
                 format = lambda x: hex(x) if type(x) is int else '0x' + x.hex()
             elif format == 'bytes':
-                format = lambda x: bytearray(x) if type(x) is not int else x.to_bytes(x.bit_length(), byteorder='big')
+                format = lambda x: bytearray(x) if type(x) is not int else x.to_bytes((x.bit_length() // 8) + 1, byteorder='big')
             elif format == 'int':
                 format = lambda x: int(x) if type(x) not in (bytearray, bytes) else int.from_bytes(x, 'big')
             elif format == 'ip':
@@ -241,6 +241,11 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                         d[attribute] = val * 8 if attribute == 'length' else val
                         if val is 0:
                             structure_description = list(filter(lambda x: next(iter(x.items()))[0] != trigger_field, structure_description))
+                    elif action == 'dec':
+                        if d.get(attribute) > 0:
+                            d[attribute] -= 1
+                            if d[attribute] is 0:
+                                structure_description = list(filter(lambda x: next(iter(x.items()))[0] != trigger_field, structure_description))
                     elif type(action) is dict:
                         try:
                             d[attribute] = action[val]
@@ -316,6 +321,8 @@ def verify_condition(structure, field, formula):
                 return is_equal(v, formula['eq'])
             elif 'neq' in formula:
                 return not is_equal(v, formula['neq'])
+            elif 'in' in formula:
+                return v in formula['in']
     return False
 
 
