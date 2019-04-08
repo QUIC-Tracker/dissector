@@ -997,6 +997,7 @@ SETTINGS parameter:
       length: 16
   - Value:
       length: varint
+  - next: SETTINGS parameter
 
 PUSH_PROMISE:
   - type: HTTP Frame
