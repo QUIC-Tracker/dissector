@@ -243,7 +243,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                             structure_description = list(filter(lambda x: next(iter(x.items()))[0] != trigger_field, structure_description))
                     elif action == 'dec':
                         if d.get(attribute) > 0:
-                            d[attribute] -= 1
+                            d[attribute] -= length // 8
                             if d[attribute] is 0:
                                 structure_description = list(filter(lambda x: next(iter(x.items()))[0] != trigger_field, structure_description))
                     elif type(action) is dict:
