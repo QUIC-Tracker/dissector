@@ -584,6 +584,17 @@ STREAM:
         - Stream Data:
             byte_length: dec
   - Stream Data:
+      conditions:
+      - LEN bit:
+          eq: 0
+      parse: HTTP Frame
+      fallback:
+        format: byte
+        length: '*'
+  - Stream Data:
+      conditions:
+      - LEN bit:
+          eq: 1
       parse: HTTP Frame
       fallback:
         format: bytes
