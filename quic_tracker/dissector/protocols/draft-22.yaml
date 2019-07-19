@@ -1,0 +1,956 @@
+#
+#   QUIC-Tracker
+#   Copyright (C) 2017-2018  Maxime Piraux
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License version 3
+#   as published by the Free Software Foundation.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+top:
+  - Long Header
+  - Short Header
+  - Version Negotiation Packet
+  - Retry Packet
+Long Header:
+  - Header Form:
+      length: 1
+      values: 1
+  - Fixed Bit:
+      length: 1
+      values: 1
+  - Long Packet Type:
+      length: 2
+      values: [0x0, 0x1, 0x2]
+      format: hex
+  - Reserved Bits:
+      length: 2
+  - Packet Number Length:
+      length: 2
+      triggers:
+        - Packet Number:
+            length:
+              0: 8
+              1: 16
+              2: 24
+              3: 32
+  - Version:
+      length: 32
+      values:
+        neq: 0
+      format: hex
+  - DCIL:
+      length: 8
+      triggers:
+        - Destination Connection ID:
+            length: set
+            save_to_context:
+  - Destination Connection ID:
+      length: 0
+      conditions:
+      - DCIL:
+          neq: 0
+      format: hex
+  - SCIL:
+      length: 8
+      triggers:
+        - Source Connection ID:
+            length: set
+            save_to_context:
+  - Source Connection ID:
+      length: 0
+      conditions:
+        - SCIL:
+            neq: 0
+      format: hex
+  - Token Length:
+      length: varint
+      conditions:
+        - Long Packet Type:
+            eq: '0x0'
+      triggers:
+        - Token:
+            length: set
+  - Token:
+      length: 0
+      conditions:
+        - Long Packet Type:
+            eq: '0x0'
+      format: bytes
+  - Length:
+      length: varint
+      triggers:
+        - Payload:
+            byte_length: set
+  - Packet Number:
+      length: 0
+  - Payload:
+      parse: Frame
+Retry Packet:
+  - Header Form:
+      length: 1
+      values: 1
+  - Fixed Bit:
+      length: 1
+      values: 1
+  - Long Packet Type:
+      length: 2
+      values: 0x03
+      format: hex
+  - Version:
+      length: 32
+      values: [0xff000016]  # Otherwise Retry can match all pre-draft-17 LH :'(
+      format: hex
+  - DCIL:
+      length: 8
+      triggers:
+      - Destination Connection ID:
+          length: set
+          save_to_context:
+  - Destination Connection ID:
+      length: 0
+      conditions:
+      - DCIL:
+          neq: 0
+      format: hex
+  - SCIL:
+      length: 8
+      triggers:
+      - Source Connection ID:
+          length: set
+          save_to_context:
+  - Source Connection ID:
+      length: 0
+      conditions:
+      - SCIL:
+          neq: 0
+      format: hex
+  - ODCIL:
+      length: 8
+      triggers:
+      - Original Destination Connection ID:
+          length: set
+  - Original Destination Connection ID:
+      length: 0
+      format: hex
+  - Retry Token:
+      length: '*'
+      format: bytes
+Short Header:
+  - Header Form:
+      length: 1
+      values: 0
+  - Fixed Bit:
+      length: 1
+      values: 1
+  - Spin Bit:
+      length: 1
+  - Reserved Bits:
+      length: 2
+  - Key Phase:
+      length: 1
+  - Packet Number Length:
+      length: 2
+      triggers:
+        - Packet Number:
+            length:
+              0: 8
+              1: 16
+              2: 24
+              3: 32
+  - Destination Connection ID:
+      length: 0
+      format: hex
+  - Packet Number:
+      length: 8
+  - Protected Payload:
+      parse: Frame
+Version Negotiation Packet:
+  - Header Form:
+      length: 1
+      values: 1
+  - Unused:
+      length: 7
+  - Version:
+      length: 32
+      values: 0
+  - DCIL:
+      length: 8
+      triggers:
+      - Destination Connection ID:
+          length: set
+          save_to_context:
+  - Destination Connection ID:
+      length: 0
+      conditions:
+      - DCIL:
+          neq: 0
+      format: hex
+  - SCIL:
+      length: 8
+      triggers:
+      - Source Connection ID:
+          length:
+            length: set
+            save_to_context:
+  - Source Connection ID:
+      length: 0
+      conditions:
+      - SCIL:
+          neq: 0
+      format: hex
+  - Supported Version:
+      length: 32
+      repeated:
+      format: hex
+Stateless Reset Packet:
+  - Header Form:
+      length: 1
+      values: 0
+  - Fixed Bit:
+      length: 1
+  - Random Bits:
+      length: 6
+  - Random Octets:
+      length: '*'
+  - Stateless Reset Token:
+      length: 128
+      format: hex
+PADDING:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x00
+      repeated:
+      format: hex
+  - next: Frame
+RESET_STREAM:
+  - type: Frame
+  - Frame Type:
+      length: varint
+      values: 0x04
+      format: hex
+  - Stream ID:
+      length: varint
+  - Application Error Code:
+      length: varint
+      format: hex
+  - Final Size:
+      length: varint
+  - next: Frame
+CONNECTION_CLOSE:
+  - type: Frame
+  - Frame Type:
+      length: varint
+      values: 0x1c
+      format: hex
+  - Error Code:
+      length: varint
+      format: hex
+  - Frame Type:
+      length: varint
+      format: hex
+  - Reason Phrase Length:
+      length: varint
+      triggers:
+        - Reason Phrase:
+            byte_length: set
+  - Reason Phrase:
+      format: bytes
+  - next: Frame
+APPLICATION_CLOSE:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x1d
+      format: hex
+  - Error Code:
+      length: varint
+      format: hex
+  - Reason Phrase Length:
+      length: varint
+      triggers:
+        - Reason Phrase:
+            byte_length: set
+  - Reason Phrase:
+      format: bytes
+  - next: Frame
+MAX_DATA:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x10
+      format: hex
+  - Maximum Data:
+      length: varint
+  - next: Frame
+MAX_STREAM_DATA:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x11
+      format: hex
+  - Stream ID:
+      length: varint
+  - Maximum Stream Data:
+      length: varint
+  - next: Frame
+MAX_STREAMS:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: [0x12, 0x13]
+      format: hex
+  - Maximum Bidirectional Streams:
+      length: varint
+      conditions:
+        - Frame Type:
+            eq: 0x12
+  - Maximum Unidirection Streams:
+      length: varint
+      conditions:
+        - Frame Type:
+            eq: 0x13
+  - next: Frame
+PING:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x01
+      format: hex
+  - next: Frame
+DATA_BLOCKED:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x14
+  - Data Limit:
+      length: varint
+  - next: Frame
+STREAM_DATA_BLOCKED:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x15
+      format: hex
+  - Stream ID:
+      length: varint
+  - Stream Data Limit:
+      length: varint
+  - next: Frame
+STREAMS_BLOCKED:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: [0x16, 0x17]
+      format: hex
+  - Bidirectional Stream Limit:
+      length: varint
+      conditions:
+        - Frame Type:
+            eq: 0x16
+  - Unidirectional Stream Limit:
+      length: varint
+      conditions:
+        - Frame Type:
+            eq: 0x17
+  - next: Frame
+NEW_CONNECTION_ID:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x18
+      format: hex
+  - Sequence:
+      length: varint
+  - Length:
+      length: 8
+      triggers:
+        - Connection ID:
+            length: set
+  - Connection ID:
+      length: 0
+      format: hex
+  - Stateless Reset Token:
+      length: 128
+      format: hex
+  - next: Frame
+STOP_SENDING:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x05
+      format: hex
+  - Stream ID:
+      length: varint
+  - Application Error Code:
+      length: varint
+      format: hex
+  - next: Frame
+RETIRE_CONNECTION_ID:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x19
+      format: hex
+  - Sequence:
+      length: varint
+  - next: Frame
+PATH_CHALLENGE:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x1a
+      format: hex
+  - Data:
+      length: 64
+      format: hex
+  - next: Frame
+PATH_RESPONSE:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x1b
+      format: hex
+  - Data:
+      length: 64
+      format: hex
+  - next: Frame
+STREAM:
+  - type: Frame
+  - Frame Type:
+      length: 5
+      values: 0x01
+      format: hex
+  - OFF bit:
+      length: 1
+  - LEN bit:
+      length: 1
+  - FIN bit:
+      length: 1
+  - Stream ID:
+      length: varint
+  - Offset:
+      length: varint
+      conditions:
+        - OFF bit:
+            eq: 1
+  - Length:
+      length: varint
+      conditions:
+        - LEN bit:
+            eq: 1
+      triggers:
+        - Stream Data:
+            byte_length: set
+  - HTTP Stream Type:
+      conditions:
+      - OFF bit:
+          eq: 0
+      - FIN bit:
+          eq: 0
+      - Stream ID:
+          in: [2, 6, 10, 3, 7, 11]
+      length: varint
+      format: bytes
+      triggers:
+        - Stream Data:
+            byte_length: dec
+  - HTTP Stream Type:
+      conditions:
+      - OFF bit:
+          eq: 1
+      - Offset:
+          eq: 0
+      - Stream ID:
+          in: [2, 6, 10, 3, 7, 11]
+      length: varint
+      format: bytes
+      triggers:
+        - Stream Data:
+            byte_length: dec
+  - Stream Data:
+      conditions:
+      - LEN bit:
+          eq: 0
+      parse: HTTP Frame
+      fallback:
+        format: byte
+        length: '*'
+  - Stream Data:
+      conditions:
+      - LEN bit:
+          eq: 1
+      parse: HTTP Frame
+      fallback:
+        format: bytes
+  - next: Frame
+CRYPTO:
+  - type: Frame
+  - Frame Type:
+      length: varint
+      values: 0x06
+      format: hex
+  - Offset:
+      length: varint
+  - Length:
+      length: varint
+      triggers:
+        - Crypto Data:
+            byte_length: set
+  - Crypto Data:
+      parse: Handshake Protocol
+      fallback:
+        format: bytes
+  - next: Frame
+NEW_TOKEN:
+  - type: Frame
+  - Frame Type:
+      length: varint
+      values: 0x07
+      format: hex
+  - Token Length:
+      length: varint
+      triggers:
+        - Token:
+            byte_length: set
+  - Token:
+      format: bytes
+  - next: Frame
+ACK:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x02
+      format: hex
+  - Largest Acknowledged:
+      length: varint
+  - ACK Delay:
+      length: varint
+  - ACK Range Count:
+      length: varint
+      triggers:
+        - ACK Ranges:
+            length: set
+  - First ACK Range:
+      length: varint
+  - ACK Ranges:
+      parse: ACK Range
+  - next: Frame
+ACK Range:
+  - Gap:
+      length: varint
+  - ACK Range:
+      length: varint
+ACK_ECN:
+  - type: Frame
+  - Frame Type:
+      length: 8
+      values: 0x03
+      format: hex
+  - Largest Acknowledged:
+      length: varint
+  - ACK Delay:
+      length: varint
+  - ACK Range Count:
+      length: varint
+      triggers:
+        - ACK Ranges:
+            length: set
+  - First ACK Range:
+      length: varint
+  - ACK Ranges:
+      parse: ACK Range
+  - ECT(0) Count:
+      length: varint
+  - ECT(1) Count:
+      length: varint
+  - ECN-CE Count:
+      length: varint
+  - next: Frame
+
+TLS Client Hello:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 1
+  - Length:
+      format: int
+      length: 24
+  - Version:
+      length: 16
+      format: hex
+      values: [0x0301, 0x0302, 0x0303]
+  - Random:
+      length: 256
+      format: bytes
+  - Session ID Length:
+      length: 8
+      triggers:
+        - Session ID:
+            byte_length: set
+  - Session ID:
+      conditions:
+        - Session ID Length:
+            neq: 0
+      format: bytes
+  - Cipher Suites Length:
+      length: 16
+      triggers:
+        - Cipher Suites:
+            length: set
+  - Cipher Suites:
+      format: bytes
+  - Compression Methods Length:
+      length: 8
+      triggers:
+        - Compression Methods:
+            length: set
+  - Compression Methods:
+      format: bytes
+  - Extensions Length:
+      length: 16
+      triggers:
+        - Extensions:
+            byte_length: set
+  - Extensions:
+      parse: Extensions
+      fallback:
+        length: '*'
+        format: bytes
+  - next: Handshake Protocol
+
+TLS Server Hello:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 2
+  - Length:
+      length: 24
+  - Version:
+      length: 16
+      format: hex
+      values: [0x0301, 0x0302, 0x0303]
+  - Random:
+      length: 256
+      format: bytes
+  - Session ID Length:
+      length: 8
+      triggers:
+        - Session ID:
+            length: set
+  - Session ID:
+      conditions:
+        - Session ID Length:
+            neq: 0
+      format: bytes
+  - Cipher Suite:
+      length: 16
+      format: hex
+  - Compression Method:
+      length: 8
+  - Extensions Length:
+      length: 16
+      triggers:
+        - Extensions:
+            byte_length: set
+  - Extensions:
+      parse: Extensions
+      fallback:
+        length: '*'
+        format: bytes
+  - next: Handshake Protocol
+
+TLS Certificate:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 11
+  - Length:
+      length: 24
+  - Certificate Payload:
+      length: '*'
+  - next: Handshake Protocol
+
+TLS End Of Early Data:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 5
+  - Length:
+      format: int
+      length: 24
+  - next: Handshake Protocol
+
+TLS Encrypted Extensions:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 8
+  - Length:
+      format: int
+      length: 24
+      triggers:
+        - Extensions:
+            byte_length: set
+  - Extensions:
+      parse: Extensions
+      fallback:
+        length: '*'
+        format: bytes
+  - next: Handshake Protocol
+
+TLS Finished:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 20
+  - Length:
+      format: int
+      length: 24
+      triggers:
+        - Verify Data:
+            byte_length: set
+  - Verify Data:
+      format: bytes
+  - next: Handshake Protocol
+
+TLS New Session Ticket:
+  - type: Handshake Protocol
+  - Handshake Type:
+      length: 8
+      values: 4
+  - Length:
+      format: int
+      length: 24
+      triggers:
+        - New Session Ticket Data:
+            byte_length: set
+  - New Session Ticket Data:
+      format: bytes
+  - next: Handshake Protocol
+
+TLS Extensions:
+  - type: Extensions
+  - Type:
+      length: 16
+      values:
+        neq: '0xffa5'
+      format: hex
+  - Length:
+      length: 16
+      triggers:
+        - Opaque:
+            byte_length: set
+  - Opaque:
+      format: bytes
+  - next: Extensions
+
+QUIC Transport Parameters:
+  - type: Extensions
+  - Type:
+      length: 16
+      values: 0xffa5
+      format: hex
+  - Length:
+      length: 16
+  - Initial Version:
+      length: 32
+      format: hex
+  - Parameters Length:
+      length: 16
+      triggers:
+        - Parameters:
+            byte_length: set
+  - Parameters:
+      parse: QUIC Transport Parameter
+  - next: Extensions
+
+QUIC Transport Parameter:
+  - Type:
+      length: 16
+      format: hex
+  - Length:
+      length: 16
+      triggers:
+        - Value:
+            byte_length: set
+  - Value:
+      length: varint
+      fallback:
+        length: '*'
+        format: hex
+  - next: QUIC Transport Parameter
+
+DATA:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: 0x00
+  - Length:
+      length: varint
+      triggers:
+        - Payload:
+            byte_length: set
+  - Payload:
+      format: bytes
+  - next: HTTP Frame
+
+HEADERS:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: 0x01
+  - Length:
+      length: varint
+      triggers:
+        - Header Block:
+            byte_length: set
+  - Header Block:
+      format: bytes
+  - next: HTTP Frame
+
+PRIORITY:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: 0x02
+  - Length:
+      length: varint
+  - PT:
+      length: 2
+  - DT:
+      length: 2
+  - 'Prioritized Element: Stream ID':
+      length: varint
+      conditions:
+        - PT:
+            eq: 0
+  - 'Prioritized Element: Push ID':
+      length: varint
+      conditions:
+      - PT:
+          eq: 1
+  - 'Prioritized Element: Placeholder':
+      length: varint
+      conditions:
+      - PT:
+          eq: 2
+  - 'Element Dependency: Stream ID':
+      length: varint
+      conditions:
+      - DT:
+          eq: 0
+  - 'Element Dependency: Push ID':
+      length: varint
+      conditions:
+      - DT:
+          eq: 1
+  - 'Element Dependency: Placeholder':
+      length: varint
+      conditions:
+      - DT:
+          eq: 2
+  - Header Block:
+      format: bytes
+  - next: HTTP Frame
+
+CANCEL_PUSH:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: 0x03
+  - Length:
+      length: varint
+  - Push ID:
+      format: varint
+  - next: HTTP Frame
+
+SETTINGS:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: 0x04
+  - Length:
+      length: varint
+      triggers:
+        - Parameters:
+            byte_length: set
+  - Parameters:
+      parse: SETTINGS parameter
+  - next: HTTP Frame
+
+SETTINGS parameter:
+  - Identifier:
+      length: varint
+  - Value:
+      length: varint
+  - next: SETTINGS parameter
+
+PUSH_PROMISE:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: 0x05
+  - Length:
+      length: varint
+  - Push ID:
+      format: varint
+  - Header Block:
+      format: bytes
+      length: '*' # TODO: It should be Length - VarIntLen(Push ID)
+  - next: HTTP Frame
+
+GOAWAY:
+  - type: HTTP Frame
+  - Type:
+      length: 8
+      values: 0x07
+  - Length:
+      length: varint
+  - Stream ID:
+      format: varint
+  - next: HTTP Frame
+
+MAX_PUSH_ID:
+  - type: HTTP Frame
+  - Type:
+      length: 8
+      values: 0x0d
+  - Length:
+      length: varint
+  - Push ID:
+      format: varint
+  - next: HTTP Frame
+
+DUPLICATE_PUSH:
+  - type: HTTP Frame
+  - Type:
+      length: 8
+      values: 0x0e
+  - Length:
+      length: varint
+  - Push ID:
+      format: varint
+  - next: HTTP Frame
+
+Unknown HTTP Frame:
+  - type: HTTP Frame
+  - Type:
+      length: varint
+      values: [0x21, 0x40, 0x7e, 0x9d, 0xbc, 0xdb, 0xfa]
+  - Length:
+      length: varint
+      triggers:
+        - Opaque Data:
+            byte_length: set
+  - Opaque Data:
+      format: bytes
+  - next: HTTP Frame
