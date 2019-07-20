@@ -370,6 +370,8 @@ NEW_CONNECTION_ID:
       format: hex
   - Sequence:
       length: varint
+  - Retire Prior To:
+      length: varint
   - Length:
       length: 8
       triggers:
