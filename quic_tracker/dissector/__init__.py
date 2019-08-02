@@ -50,6 +50,7 @@ def parse_packet(buffer, context):
 def parse_packet_with(buffer, protocol, context):
     top_level = protocol.pop('top')
     last_e = None
+    print()
     for top_struct in top_level:
         try:
             ret, inc, _ = parse_structure_type(buffer[:], top_struct, protocol, 0, context)
@@ -60,6 +61,7 @@ def parse_packet_with(buffer, protocol, context):
             last_e = e
             pass
     if last_e:
+        print(buffer)
         raise last_e
     return []
 
@@ -94,7 +96,7 @@ def parse_structure_type(buffer, type_name, protocol, start_idx, context):
             struct, inc, next_struct = parse_structure(buffer, struct_description, protocol, start_idx, context)
             return (struct_name, struct, start_idx, start_idx + inc), inc, next_struct
         except ParseError as e:
-            #print('%s: %s' % (struct_name, e))
+            print('%s: %s' % (struct_name, e))
             continue
     raise ParseError('No structure could be parsed for type {}, first byte was {}'.format(type_name, buffer[0]))
 
@@ -186,7 +188,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
             continue
         elif length:
             if length == 'varint':
-                val, length = read_varint(buffer)
+                val, length = read_varint(buffer, limit=byte_length)
             elif length == 'pn':
                 val, length = read_pn(buffer)
             elif length == '*':
@@ -222,6 +224,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 continue
 
             structure.append((field, format(val), start_idx + i, start_idx + i + (length//8 or 1)))
+            print(structure[-1])
 
             if length >= 8:
                 buffer = buffer[length//8:]
@@ -290,8 +293,11 @@ def read(buffer, length):
     return struct.unpack('!'+_len_to_format_char.get(length), buffer[:length])[0]
 
 
-def read_varint(buffer):
+def read_varint(buffer, limit=None):
     length = 2 ** ((buffer[0] & 0xc0) >> 6)
+    if limit and length > limit:
+        print("capping to limit", limit)
+        return read(buffer, limit), limit * 8
     varint_buf = buffer[:length]
     varint_buf[0] &= 0x3f
     return read(varint_buf, length), length * 8

@@ -452,6 +452,8 @@ STREAM:
       triggers:
         - Stream Data:
             byte_length: set
+        - HTTP Stream Type:
+            byte_length: set
   - HTTP Stream Type:
       conditions:
       - OFF bit:
