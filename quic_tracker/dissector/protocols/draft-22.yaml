@@ -104,6 +104,8 @@ Retry Packet:
       length: 2
       values: 0x03
       format: hex
+  - Unused Bits:
+      length: 4
   - Version:
       length: 32
       values: [0xff000016]  # Otherwise Retry can match all pre-draft-17 LH :'(
