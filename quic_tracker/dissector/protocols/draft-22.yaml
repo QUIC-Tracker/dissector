@@ -199,9 +199,8 @@ Version Negotiation Packet:
       length: 8
       triggers:
       - Source Connection ID:
-          length:
-            length: set
-            save_to_context:
+          length: set
+          save_to_context:
   - Source Connection ID:
       length: 0
       conditions:
