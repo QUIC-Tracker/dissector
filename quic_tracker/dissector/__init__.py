@@ -135,23 +135,22 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
         if length is None and byte_length is not None and not parse:
             length = byte_length * 8
         format = struct_triggers.get(field, {}).get('format', args.get('format', field_ctx.get('format')))
-        if format in vars(builtins):
+        if type(format) is str and format in vars(builtins):
             if format == 'hex':
                 format = lambda x: hex(x) if type(x) is int else '0x' + x.hex()
             elif format == 'bytes':
                 format = lambda x: bytearray(x) if type(x) is not int else x.to_bytes((x.bit_length() // 8) + 1, byteorder='big')
             elif format == 'int':
                 format = lambda x: int(x) if type(x) not in (bytearray, bytes) else int.from_bytes(x, 'big')
-            elif format == 'ip':
-                format = socket.inet_ntoa
-            elif format == 'ipv6':
-                format = lambda x: socket.inet_ntop(socket.AF_INET6, bytearray(x))
             else:
                 format = vars(builtins)[format]
         elif format == 'ip':
             format = socket.inet_ntoa
         elif format == 'ipv6':
             format = lambda x: socket.inet_ntop(socket.AF_INET6, bytearray(x))
+        elif type(format) is dict:
+            d = format
+            format = lambda x: '0x%02x (%s)' % (x, d.get(x, ''))
         else:
             format = lambda x: x
 
@@ -224,7 +223,7 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                 continue
 
             structure.append((field, format(val), start_idx + i, start_idx + i + (length//8 or 1)))
-            print(structure[-1])
+            # print(structure[-1])
 
             if length >= 8:
                 buffer = buffer[length//8:]
