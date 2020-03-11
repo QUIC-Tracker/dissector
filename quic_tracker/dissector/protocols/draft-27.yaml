@@ -134,11 +134,8 @@ Retry Packet:
       - SCIL:
           neq: 0
       format: hex
-  - Retry Token:
+  - Retry Token & Integrity Tag:
       length: '*'
-      format: bytes
-  - Retry Integrity Tag:
-      length: 128
       format: bytes
 Short Header:
   - Header Form:
