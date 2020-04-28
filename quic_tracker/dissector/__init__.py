@@ -101,6 +101,29 @@ def parse_structure_type(buffer, type_name, protocol, start_idx, context):
     raise ParseError('No structure could be parsed for type {}, first byte was {}'.format(type_name, buffer[0]))
 
 
+def resolve_length(buffer_len, structure_description, struct_triggers, field_ctx):
+    original_buffer_len = buffer_len
+    while structure_description:
+        field, args = list(structure_description.pop().items())[0]
+        if field == 'next':
+            continue
+        elif field == 'type':
+            continue
+        else:
+            length = struct_triggers.get(field, {}).get('length', field_ctx.get('length'))
+            parse = struct_triggers.get(field, {}).get('parse', args.get('parse', field_ctx.get('parse')))
+            if length is not None and 'parse' in args:
+                length //= 8
+            if length is None:
+                length = args.get('length')
+            byte_length = struct_triggers.get(field, {}).get('byte_length', args.get('byte_length', field_ctx.get('byte_length')))
+            if length is None and byte_length is not None and not parse:
+                length = byte_length * 8
+            buffer_len -= length
+
+    return buffer_len if original_buffer_len != buffer_len else '*'
+
+
 def parse_structure(buffer, structure_description, protocol, start_idx, context):
     structure = []
     struct_triggers = {}
@@ -131,6 +154,8 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
             length //= 8
         if length is None:
             length = args.get('length')
+        if length == '*':
+            length = resolve_length(len(buffer) * 8, deepcopy(structure_description), struct_triggers, field_ctx)
         byte_length = struct_triggers.get(field, {}).get('byte_length', args.get('byte_length', field_ctx.get('byte_length')))
         if length is None and byte_length is not None and not parse:
             length = byte_length * 8

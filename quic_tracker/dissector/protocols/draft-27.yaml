@@ -19,6 +19,7 @@ top:
   - Short Header
   - Version Negotiation Packet
   - Retry Packet
+  - Stateless Reset Packet
 Long Header:
   - Header Form:
       length: 1
@@ -210,10 +211,12 @@ Stateless Reset Packet:
       values: 0
   - Fixed Bit:
       length: 1
-  - Random Bits:
+      values: 1
+  - Unpredictable Bits:
       length: 6
-  - Random Octets:
+  - Unpredictable Octets:
       length: '*'
+      format: hex
   - Stateless Reset Token:
       length: 128
       format: hex
@@ -480,7 +483,7 @@ STREAM:
           eq: 0
       parse: HTTP Frame
       fallback:
-        format: byte
+        format: bytes
         length: '*'
   - Stream Data:
       conditions:
