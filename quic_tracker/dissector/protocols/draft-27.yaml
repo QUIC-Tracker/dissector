@@ -109,7 +109,7 @@ Retry Packet:
       length: 4
   - Version:
       length: 32
-      values: [0xff00001b]  # Otherwise Retry can match all pre-draft-17 LH :'(
+      values: [0xff00001b, 0xff00001c]  # Otherwise Retry can match all pre-draft-17 LH :'(
       format: hex
   - DCIL:
       length: 8
@@ -796,16 +796,18 @@ QUIC Transport Parameter:
         0x0c: disable_active_migration
         0x0d: preferred_address
         0x0e: active_connection_id_limit
+        0x0f: inital_source_connection_id
+        0x10: retry_source_connection_id
   - Length:
       length: varint
       triggers:
         - Value:
             byte_length: set
   - Value:
-      length: varint
       fallback:
         length: '*'
         format: hex
+      format: hex
   - next: QUIC Transport Parameter
 
 DATA:
