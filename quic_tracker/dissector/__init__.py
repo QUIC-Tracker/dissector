@@ -240,8 +240,15 @@ def parse_structure(buffer, structure_description, protocol, start_idx, context)
                                 raise err
                             elif op == 'neq' and is_equal(v, val):
                                 raise err
-                    elif (type(values) is list and val not in values) or (type(values) is not list and val != values):
+                    elif type(values) is list and val not in values:
                         raise ParseError('Value %s for field %s not acceptable (%s)' % (str(val), str(field), str(values)))
+                    elif values == 'http3_reserved_frame_types':
+                        if (val - 0x21) % 0x1f != 0:
+                            raise ParseError('Value %d is not an HTTP3 Reserved Frame Types')
+                    elif type(values) is not list and val != values:
+                        raise ParseError(
+                            'Value %s for field %s not acceptable (%s)' % (
+                            str(val), str(field), str(values)))
             except ParseError as e:
                 if not (repeating and successful_repeated):
                     raise

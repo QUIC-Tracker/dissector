@@ -962,11 +962,11 @@ DUPLICATE_PUSH:
       format: varint
   - next: HTTP Frame
 
-Unknown HTTP Frame:
+HTTP Reserved Unknown Frame:
   - type: HTTP Frame
   - Type:
       length: varint
-      values: [0x21, 0x40, 0x7e, 0x9d, 0xbc, 0xdb, 0xfa]
+      values: http3_reserved_frame_types
   - Length:
       length: varint
       triggers:
