@@ -40,7 +40,7 @@ def parse_packet(buffer, context):
     for p in sorted(os.listdir(join_root('protocols')), reverse=True):
         with open(join_root('protocols', p)) as f:
             try:
-                return p, parse_packet_with(buffer[:], protocol=yaml.load(f), context=context)
+                return p, parse_packet_with(buffer[:], protocol=yaml.safe_load(f), context=context)
             except Exception as e:
                 last_e = e
                 continue
